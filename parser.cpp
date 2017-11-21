@@ -1,10 +1,22 @@
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+#include <stack>
+#include <utility>
+#include <cassert>
 
 #include "parser.h"
 
 #define INPUT_BUF_SIZE 256
+
+struct record {
+  Formula **fp;
+  int depth;
+  bool quick_backtrack; // default: false
+
+  record(Formula **f, int d, bool q = false) :
+    fp(f), depth(d) , quick_backtrack(q) {}
+};
 
 // variable to int mapper
 int var_next_int = 0;
@@ -39,21 +51,19 @@ char *parse_var(char *f, int *ret_var_int) {
 }
 
 Formula *parse_formula(char *f, char *end) {
-  char *left_end = 0;
-  char *right_start = 0;
-
   int depth = 0;
   bool expect_expr = true;
-  char *first_char = 0;
-  char *first_paren_start = 0;
-  char *first_paren_end = 0;
-  Formula *left_formula = 0;
-  Formula **next_formula_ptr = &left_formula;
   int var_int = -1;
-  bool simple_left = true;
   Connective bin_op;
 
-  while(f < end && *f && !right_start) {
+  std::stack<record> parent_stack;
+
+  // kick start
+  Formula *root = 0;
+  parent_stack.emplace(&root, 0);
+  parent_stack.emplace(&root, 0);
+
+  while(f < end && *f) {
     if (*f == ' ') {
       // skip whitespace between tokens
       f++;
@@ -64,27 +74,34 @@ Formula *parse_formula(char *f, char *end) {
       // expecting an expression
       switch(*f) {
         case '!':
-          if (!first_char) first_char = f;
           {
+            assert(parent_stack.size() >= 1);
+            record curr_record = parent_stack.top();
             Negated *new_one = new Negated(0);
-            *next_formula_ptr = new_one;
-            next_formula_ptr = &(new_one->f);
+            *(curr_record.fp) = new_one;
+            parent_stack.emplace(&(new_one->f), depth, true);
           }
-          
           break;
         case '(':
-          if (!first_paren_start) first_paren_start = f;
           depth++;
           break;
         default:
           // allow a-z A-z 0-9
           if (!is_var_char(f)) return new Invalid(f, 'e');
-          if (!first_char) first_char = f;
-          f = parse_var(f, &var_int);
 
+          f = parse_var(f, &var_int);
           {
+            assert(parent_stack.size() >= 1);
+            record curr_record = parent_stack.top();
             Variable *new_one = new Variable(var_int);
-            *next_formula_ptr = new_one;
+            *(curr_record.fp) = new_one;
+
+            // clean up negations
+            while (depth <= curr_record.depth && curr_record.quick_backtrack) {
+              parent_stack.pop();
+              curr_record = parent_stack.top();
+            }
+            if (depth <= curr_record.depth) parent_stack.pop();
           }
 
           expect_expr = false; // we now expect a connective
@@ -92,72 +109,59 @@ Formula *parse_formula(char *f, char *end) {
       }
     } else {
       // expecting a connective
-      switch(*f) {
-        case '&':
-          bin_op = land;
-          expect_expr = true; // we now expect an expression
+      if (*f == ')') {
+        depth--;
+        if (depth < 0) return new Invalid(f-1, '(');
 
-          if (depth == 0) right_start = f+1;
-          else simple_left = false;
+        // move back up
+        record curr_record = parent_stack.top();
+        while (depth <= curr_record.depth && curr_record.quick_backtrack) {
+          parent_stack.pop();
+          curr_record = parent_stack.top();
+        }
+        if (depth <= curr_record.depth) parent_stack.pop();
+      } else {
+        // check which connective it is
+        switch(*f) {
+          case '&':
+            bin_op = land;
+            break;
+          case '|':
+            bin_op = lor;
+            break;
+          case '<':
+            // start of equiv
+            if (f[1] != '-') return new Invalid(f+1, '-');
+            if (f[2] != '>') return new Invalid(f+2, '>');
+            bin_op = lequiv;
+            f += 2; // bring f to last char of connective
+            break;
+          case '-':
+            // start of imply
+            if (f[1] != '>') return new Invalid(f+1, '>');
+            bin_op = limply;
+            f += 1; // bring f to last char of connective
+            break;
+          default:
+            return new Invalid(f, 'c');
+        }
+        expect_expr = true; // we now expect an expression
 
-          break;
-        case '|':
-          bin_op = lor;
-          expect_expr = true; // we now expect an expression
-
-          if (depth == 0) right_start = f+1;
-          else simple_left = false;
-
-          break;
-        case ')':
-          depth--;
-          if (depth < 0) return new Invalid(f-1, '(');
-          else if (depth == 0 && !first_paren_end) first_paren_end = f;
-          break;
-        case '<':
-          // start of equiv
-          if (f[1] != '-') return new Invalid(f+1, '-');
-          if (f[2] != '>') return new Invalid(f+2, '>');
-          bin_op = lequiv;
-          expect_expr = true; // we now expect an expression
-
-          if (depth == 0) right_start = f+3;
-          else simple_left = false;
-
-          break;
-        case '-':
-          // start of imply
-          if (f[1] != '>') return new Invalid(f+1, '>');
-          bin_op = limply;
-          expect_expr = true;
-
-          if (depth == 0) right_start = f+2;
-          else simple_left = false;
-
-          break;
-        default:
-          return new Invalid(f, 'c');
+        /* parent stack guaranteed not empty rn */
+        assert(parent_stack.size() >= 1);
+        record curr_record = parent_stack.top();
+        Binary *new_one = new Binary(*(curr_record.fp), 0, bin_op);
+        *(curr_record.fp) = new_one;
+        parent_stack.emplace(&(new_one->r), depth);
       }
     }
 
     f++;
   }
-  left_end = f;
 
   if (depth != 0) return new Invalid(f, ')');
 
-  if (!simple_left) {
-    // parse left side recursively
-    *next_formula_ptr = parse_formula(first_paren_start+1, first_paren_end);
-  }
-
-  if (right_start) {
-    // is binary
-    return new Binary(left_formula, parse_formula(right_start, end), bin_op);
-  } else {
-    // is unary
-    return left_formula;
-  }
+  return root;
 }
 
 void print_all_variables() {

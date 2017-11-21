@@ -56,7 +56,7 @@ public:
     Formula(negated), f(fa) {}
   virtual void print_self(std::string prefix) {
     std::cout << prefix << "NOT" << std::endl;
-    f->print_self(prefix + "  ");
+    if (f) f->print_self(prefix + "  ");
   }
   virtual Formula *find_error() {
     return f->find_error();
@@ -72,7 +72,7 @@ public:
   Binary(Formula *left, Formula *right, Connective conn) :
     Formula(binary), l(left), r(right), op(conn) {}
   virtual void print_self(std::string prefix) {
-    l->print_self(prefix + "  ");
+    if (l) l->print_self(prefix + "  ");
 
     std::cout << prefix;
     switch(op) {
@@ -91,7 +91,7 @@ public:
     }
     std::cout << std::endl;
 
-    r->print_self(prefix + "  ");
+    if (r) r->print_self(prefix + "  ");
   }
   virtual Formula *find_error() {
     Formula *l_error = l->find_error();
