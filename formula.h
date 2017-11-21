@@ -7,12 +7,11 @@ enum Connective {land, lor, limply, lequiv};
 
 class Formula {
 public:
-  enum Type {invalid, variable, negated, binary};
+  enum Type {variable, negated, binary};
 
   Type t;
   virtual void print(std::ostream& os) const = 0;
   virtual void print_tree(std::string prefix) const = 0;
-  virtual Formula *find_error() = 0;
   friend std::ostream& operator<<(std::ostream& os, const Formula& f) {
     f.print(os);
     return os;
@@ -20,25 +19,6 @@ public:
 protected:
   Formula(Type type) : t(type) {}
   virtual ~Formula() {}
-};
-
-class Invalid : public Formula {
-public:
-  char *error_char;
-  char expects;
-
-  Invalid(char *error_pos, char exp) :
-    Formula(invalid), error_char(error_pos), expects(exp) {}
-
-  virtual void print(std::ostream& os) const {
-    os << "INVALID";
-  }
-  virtual void print_tree(std::string prefix) const {
-    std::cout << prefix << "Invalid formula" << std::endl;
-  }
-  virtual Formula *find_error() {
-    return this;
-  }
 };
 
 class Variable : public Formula {
@@ -54,9 +34,6 @@ public:
   }
   virtual void print_tree(std::string prefix) const {
     std::cout << prefix << name << std::endl;
-  }
-  virtual Formula *find_error() {
-    return 0;
   }
 };
 
@@ -74,9 +51,6 @@ public:
   virtual void print_tree(std::string prefix) const {
     std::cout << prefix << "NOT" << std::endl;
     if (f) f->print_tree(prefix + "  ");
-  }
-  virtual Formula *find_error() {
-    return f->find_error();
   }
 };
 
@@ -130,11 +104,6 @@ public:
     std::cout << std::endl;
 
     if (r) r->print_tree(prefix + "  ");
-  }
-  virtual Formula *find_error() {
-    Formula *l_error = l->find_error();
-    if (l_error) return l_error;
-    return r->find_error();
   }
 };
 

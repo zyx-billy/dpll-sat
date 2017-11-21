@@ -46,9 +46,9 @@ char *parse_var(char *f, vmap_t *Vmap, rmap_t *Rmap, Variable **ret_var) {
   return f - 1;
 }
 
-Formula *parse_formula(char *f, char *end) {
-  vmap_t Vmap;
-  rmap_t Rmap;
+parse_result *parse_formula(char *f, char *end) {
+  vmap_t *Vmap = new vmap_t;
+  rmap_t *Rmap = new rmap_t;
 
   int depth = 0;
   bool expect_expr = true;
@@ -85,11 +85,11 @@ Formula *parse_formula(char *f, char *end) {
           break;
         default:
           // allow a-z A-z 0-9
-          if (!is_var_char(f)) return new Invalid(f, 'e');
+          if (!is_var_char(f)) return new parse_result(f, 'e');
 
           {
             Variable *new_one;
-            f = parse_var(f, &Vmap, &Rmap, &new_one);
+            f = parse_var(f, Vmap, Rmap, &new_one);
 
             assert(parent_stack.size() >= 1);
             record curr_record = parent_stack.top();
@@ -110,7 +110,7 @@ Formula *parse_formula(char *f, char *end) {
       // expecting a connective
       if (*f == ')') {
         depth--;
-        if (depth < 0) return new Invalid(f-1, '(');
+        if (depth < 0) return new parse_result(f-1, '(');
 
         // move back up
         record curr_record = parent_stack.top();
@@ -130,19 +130,19 @@ Formula *parse_formula(char *f, char *end) {
             break;
           case '<':
             // start of equiv
-            if (f[1] != '-') return new Invalid(f+1, '-');
-            if (f[2] != '>') return new Invalid(f+2, '>');
+            if (f[1] != '-') return new parse_result(f+1, '-');
+            if (f[2] != '>') return new parse_result(f+2, '>');
             bin_op = lequiv;
             f += 2; // bring f to last char of connective
             break;
           case '-':
             // start of imply
-            if (f[1] != '>') return new Invalid(f+1, '>');
+            if (f[1] != '>') return new parse_result(f+1, '>');
             bin_op = limply;
             f += 1; // bring f to last char of connective
             break;
           default:
-            return new Invalid(f, 'c');
+            return new parse_result(f, 'c');
         }
         expect_expr = true; // we now expect an expression
 
@@ -158,9 +158,9 @@ Formula *parse_formula(char *f, char *end) {
     f++;
   }
 
-  if (depth != 0) return new Invalid(f, ')');
+  if (depth != 0) return new parse_result(f, ')');
 
-  return root;
+  return new parse_result(root, Vmap, Rmap);
 }
 
 void print_all_variables(rmap_t *Rmap) {
@@ -174,18 +174,16 @@ int main() {
   char input[INPUT_BUF_SIZE];
   std::cin.getline(input, INPUT_BUF_SIZE);
 
-  Formula *f = parse_formula(input, input+INPUT_BUF_SIZE);
+  parse_result *pr = parse_formula(input, input+INPUT_BUF_SIZE);
 
-  Formula *f_error = f->find_error();
-  if (!f_error) {
+  if (!pr->has_error()) {
     std::cout << "Parse complete. No errors." << std::endl;
   } else {
-    Invalid *error = static_cast<Invalid *>(f_error);
     std::cout << "Parse Error:" << std::endl
-      << "  position: " << (error->error_char - input) << std::endl
-      << "  found: " << *error->error_char << std::endl
+      << "  position: " << (pr->error_char_pos - input) << std::endl
+      << "  found: " << *pr->error_char_pos << std::endl
       << "  expects: ";
-    switch (error->expects) {
+    switch (pr->expects) {
       case 'e':
         std::cout << "an expression";
         break;
@@ -193,14 +191,14 @@ int main() {
         std::cout << "a binary operator";
         break;
       default:
-        std::cout << "'" << error->expects << "'";
+        std::cout << "'" << pr->expects << "'";
     }
     std::cout << std::endl;
     return 0;
   }
 
-  std::cout << "Parse result:" << std::endl << *f << std::endl;
+  std::cout << "Parse result:" << std::endl << *(pr->f) << std::endl;
 
   std::cout << "Parse tree:" << std::endl;
-  f->print_tree("");
+  pr->f->print_tree("");
 }

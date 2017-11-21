@@ -10,10 +10,22 @@ typedef std::vector<std::string> rmap_t;
 
 struct parse_result {
   Formula *f;
-  vmap_t Vmap;
-  rmap_t Rmap;
+  vmap_t *Vmap;
+  rmap_t *Rmap;
+
+  char *error_char_pos;
+  char expects;
+
+  parse_result(Formula *ff, vmap_t *v, rmap_t *r) :
+    f(ff), Vmap(v), Rmap(r), error_char_pos(0) {}
+  parse_result(char *error_pos, char exp) :
+    error_char_pos(error_pos), expects(exp) {}
+
+  bool has_error() {
+    return error_char_pos != 0;
+  }
 };
 
-Formula *parse_formula(char *f, char *end);
+parse_result *parse_formula(char *f, char *end);
 
 #endif /* PARSER_H */
