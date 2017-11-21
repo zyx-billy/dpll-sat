@@ -10,8 +10,13 @@ public:
   enum Type {invalid, variable, negated, binary};
 
   Type t;
-  virtual void print_self(std::string prefix) = 0;
+  virtual void print(std::ostream& os) const = 0;
+  virtual void print_tree(std::string prefix) const = 0;
   virtual Formula *find_error() = 0;
+  friend std::ostream& operator<<(std::ostream& os, const Formula& f) {
+    f.print(os);
+    return os;
+  }
 protected:
   Formula(Type type) : t(type) {}
   virtual ~Formula() {}
@@ -25,7 +30,10 @@ public:
   Invalid(char *error_pos, char exp) :
     Formula(invalid), error_char(error_pos), expects(exp) {}
 
-  virtual void print_self(std::string prefix) {
+  virtual void print(std::ostream& os) const {
+    os << "INVALID";
+  }
+  virtual void print_tree(std::string prefix) const {
     std::cout << prefix << "Invalid formula" << std::endl;
   }
   virtual Formula *find_error() {
@@ -41,7 +49,10 @@ public:
   Variable(int v, std::string n) :
     Formula(variable), var(v), name(n) {}
 
-  virtual void print_self(std::string prefix) {
+  virtual void print(std::ostream& os) const {
+    os << name;
+  }
+  virtual void print_tree(std::string prefix) const {
     std::cout << prefix << name << std::endl;
   }
   virtual Formula *find_error() {
@@ -55,9 +66,14 @@ public:
 
   Negated(Formula *fa) :
     Formula(negated), f(fa) {}
-  virtual void print_self(std::string prefix) {
+
+  virtual void print(std::ostream& os) const {
+    os << "!";
+    f->print(os);
+  }
+  virtual void print_tree(std::string prefix) const {
     std::cout << prefix << "NOT" << std::endl;
-    if (f) f->print_self(prefix + "  ");
+    if (f) f->print_tree(prefix + "  ");
   }
   virtual Formula *find_error() {
     return f->find_error();
@@ -72,8 +88,29 @@ public:
 
   Binary(Formula *left, Formula *right, Connective conn) :
     Formula(binary), l(left), r(right), op(conn) {}
-  virtual void print_self(std::string prefix) {
-    if (l) l->print_self(prefix + "  ");
+
+  virtual void print(std::ostream& os) const {
+    os << "(";
+    l->print(os);
+    switch (op) {
+      case land:
+        os << "&";
+        break;
+      case lor:
+        os << "|";
+        break;
+      case limply:
+        os << "->";
+        break;
+      case lequiv:
+        os << "<->";
+        break;
+    }
+    r->print(os);
+    os << ")";
+  }
+  virtual void print_tree(std::string prefix) const {
+    if (l) l->print_tree(prefix + "  ");
 
     std::cout << prefix;
     switch(op) {
@@ -92,7 +129,7 @@ public:
     }
     std::cout << std::endl;
 
-    if (r) r->print_self(prefix + "  ");
+    if (r) r->print_tree(prefix + "  ");
   }
   virtual Formula *find_error() {
     Formula *l_error = l->find_error();

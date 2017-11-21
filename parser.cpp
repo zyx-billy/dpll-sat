@@ -199,6 +199,8 @@ int main() {
     return 0;
   }
 
+  std::cout << "Parse result:" << std::endl << *f << std::endl;
+
   std::cout << "Parse tree:" << std::endl;
-  f->print_self("");
+  f->print_tree("");
 }
