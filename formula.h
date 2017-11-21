@@ -10,13 +10,11 @@ public:
   enum Type {invalid, variable, negated, binary};
 
   Type t;
-  Formula(Type type): t(type) {}
-  virtual void print_self(std::string prefix) {
-    std::cout << prefix << "Generic formula" << std::endl;
-  }
-  virtual Formula *find_error() {
-    return 0;
-  }
+  virtual void print_self(std::string prefix) = 0;
+  virtual Formula *find_error() = 0;
+protected:
+  Formula(Type type) : t(type) {}
+  virtual ~Formula() {}
 };
 
 class Invalid : public Formula {
