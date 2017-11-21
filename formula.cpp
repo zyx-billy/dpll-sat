@@ -21,6 +21,9 @@ public:
   virtual void print_self(std::string prefix) {
     std::cout << prefix << "Generic formula" << std::endl;
   }
+  virtual Formula *find_error() {
+    return 0;
+  }
 };
 
 class Invalid : public Formula {
@@ -34,6 +37,9 @@ public:
   virtual void print_self(std::string prefix) {
     std::cout << prefix << "Invalid formula" << std::endl;
   }
+  virtual Formula *find_error() {
+    return this;
+  }
 };
 
 class Variable : public Formula {
@@ -46,6 +52,9 @@ public:
   virtual void print_self(std::string prefix) {
     std::cout << prefix << Rmap[var] << std::endl;
   }
+  virtual Formula *find_error() {
+    return 0;
+  }
 };
 
 class Negated : public Formula {
@@ -57,6 +66,9 @@ public:
   virtual void print_self(std::string prefix) {
     std::cout << prefix << "NOT" << std::endl;
     f->print_self(prefix + "  ");
+  }
+  virtual Formula *find_error() {
+    return f->find_error();
   }
 };
 
@@ -89,6 +101,11 @@ public:
     std::cout << std::endl;
 
     r->print_self(prefix + "  ");
+  }
+  virtual Formula *find_error() {
+    Formula *l_error = l->find_error();
+    if (l_error) return l_error;
+    return r->find_error();
   }
 };
 
@@ -253,6 +270,29 @@ int main() {
   std::cin.getline(input, INPUT_BUF_SIZE);
 
   Formula *f = parse_formula(input, input+INPUT_BUF_SIZE);
+
+  Formula *f_error = f->find_error();
+  if (!f_error) {
+    std::cout << "Parse complete. No errors." << std::endl;
+  } else {
+    Invalid *error = static_cast<Invalid *>(f_error);
+    std::cout << "Parse Error:" << std::endl
+      << "  position: " << (error->error_char - input) << std::endl
+      << "  found: " << *error->error_char << std::endl
+      << "  expects: ";
+    switch (error->expects) {
+      case 'e':
+        std::cout << "an expression";
+        break;
+      case 'c':
+        std::cout << "a binary operator";
+        break;
+      default:
+        std::cout << "'" << error->expects << "'";
+    }
+    std::cout << std::endl;
+    return 0;
+  }
 
   std::cout << "Parse tree:" << std::endl;
   f->print_self("");
