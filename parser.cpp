@@ -9,6 +9,7 @@
 
 #define INPUT_BUF_SIZE 256
 
+/* for recording states in the parent_stack */
 struct record {
   Formula **fp;
   int depth;
@@ -18,11 +19,6 @@ struct record {
     fp(f), depth(d) , quick_backtrack(q) {}
 };
 
-// variable to int mapper
-int var_next_int = 0;
-std::unordered_map<std::string, int> Vmap;
-std::vector<std::string> Rmap;
-
 // is a valid character for a variable
 bool is_var_char(char *f) {
   return (*f >= 'a' && *f <= 'z') ||
@@ -31,7 +27,7 @@ bool is_var_char(char *f) {
 }
 
 // return last position of variable name
-char *parse_var(char *f, int *ret_var_int) {
+char *parse_var(char *f, vmap_t *Vmap, rmap_t *Rmap, Variable **ret_var) {
   int len = 0;
   while (is_var_char(f)) {
     f++;
@@ -39,21 +35,23 @@ char *parse_var(char *f, int *ret_var_int) {
   }
 
   std::string var_name(f-len, len);
-  auto var_int = Vmap.find(var_name);
-  if (var_int == Vmap.end()) {
+  auto var_int = Vmap->find(var_name);
+  if (var_int == Vmap->end()) {
     // new var
-    Vmap[var_name] = var_next_int++;
-    Rmap.push_back(var_name);
+    (*Vmap)[var_name] = Rmap->size();
+    Rmap->push_back(var_name);
   }
 
-  *ret_var_int = Vmap[var_name];
+  *ret_var = new Variable((*Vmap)[var_name], var_name);
   return f - 1;
 }
 
 Formula *parse_formula(char *f, char *end) {
+  vmap_t Vmap;
+  rmap_t Rmap;
+
   int depth = 0;
   bool expect_expr = true;
-  int var_int = -1;
   Connective bin_op;
 
   std::stack<record> parent_stack;
@@ -89,11 +87,12 @@ Formula *parse_formula(char *f, char *end) {
           // allow a-z A-z 0-9
           if (!is_var_char(f)) return new Invalid(f, 'e');
 
-          f = parse_var(f, &var_int);
           {
+            Variable *new_one;
+            f = parse_var(f, &Vmap, &Rmap, &new_one);
+
             assert(parent_stack.size() >= 1);
             record curr_record = parent_stack.top();
-            Variable *new_one = new Variable(var_int);
             *(curr_record.fp) = new_one;
 
             // clean up negations
@@ -164,10 +163,10 @@ Formula *parse_formula(char *f, char *end) {
   return root;
 }
 
-void print_all_variables() {
+void print_all_variables(rmap_t *Rmap) {
   std::cout << "All variables:" << std::endl;
-  for (int i = 0; i < var_next_int; i++) {
-    std::cout << i << ": " << Rmap[i] << std::endl;
+  for (int i = 0; i < Rmap->size(); i++) {
+    std::cout << i << ": " << (*Rmap)[i] << std::endl;
   }
 }
 

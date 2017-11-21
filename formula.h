@@ -36,12 +36,13 @@ public:
 class Variable : public Formula {
 public:
   int var;
+  std::string name;
 
-  Variable(int n) :
-    Formula(variable), var(n) {}
+  Variable(int v, std::string n) :
+    Formula(variable), var(v), name(n) {}
 
   virtual void print_self(std::string prefix) {
-    std::cout << prefix << var << std::endl;
+    std::cout << prefix << name << std::endl;
   }
   virtual Formula *find_error() {
     return 0;
