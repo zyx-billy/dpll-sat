@@ -1,6 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <unordered_map>
+#include <vector>
 #include "formula.h"
 
 // mapping from variable's original name to variable's int assignment

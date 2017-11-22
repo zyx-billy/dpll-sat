@@ -1,13 +1,10 @@
 #include <iostream>
-#include <unordered_map>
-#include <vector>
 #include <stack>
 #include <utility>
 #include <cassert>
 
+#include "formula.h"
 #include "parser.h"
-
-#define INPUT_BUF_SIZE 256
 
 /* for recording states in the parent_stack */
 struct record {
@@ -168,37 +165,4 @@ void print_all_variables(rmap_t *Rmap) {
   for (int i = 0; i < Rmap->size(); i++) {
     std::cout << i << ": " << (*Rmap)[i] << std::endl;
   }
-}
-
-int main() {
-  char input[INPUT_BUF_SIZE];
-  std::cin.getline(input, INPUT_BUF_SIZE);
-
-  parse_result *pr = parse_formula(input, input+INPUT_BUF_SIZE);
-
-  if (!pr->has_error()) {
-    std::cout << "Parse complete. No errors." << std::endl;
-  } else {
-    std::cout << "Parse Error:" << std::endl
-      << "  position: " << (pr->error_char_pos - input) << std::endl
-      << "  found: " << *pr->error_char_pos << std::endl
-      << "  expects: ";
-    switch (pr->expects) {
-      case 'e':
-        std::cout << "an expression";
-        break;
-      case 'c':
-        std::cout << "a binary operator";
-        break;
-      default:
-        std::cout << "'" << pr->expects << "'";
-    }
-    std::cout << std::endl;
-    return 0;
-  }
-
-  std::cout << "Parse result:" << std::endl << *(pr->f) << std::endl;
-
-  std::cout << "Parse tree:" << std::endl;
-  pr->f->print_tree("");
 }

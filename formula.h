@@ -1,6 +1,7 @@
 #ifndef FORMULA_H
 #define FORMULA_H
 
+#include <iostream>
 #include <string>
 
 enum Connective {land, lor, limply, lequiv};
@@ -9,7 +10,7 @@ class Formula {
 public:
   enum Type {variable, negated, binary};
 
-  Type t;
+  Type type;
   virtual void print(std::ostream& os) const = 0;
   virtual void print_tree(std::string prefix) const = 0;
   friend std::ostream& operator<<(std::ostream& os, const Formula& f) {
@@ -17,7 +18,7 @@ public:
     return os;
   }
 protected:
-  Formula(Type type) : t(type) {}
+  Formula(Type t) : type(t) {}
   virtual ~Formula() {}
 };
 
