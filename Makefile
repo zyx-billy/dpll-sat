@@ -1,20 +1,31 @@
 CXX = g++
 CXXFLAGS = -std=c++11
 
-all: parser
+SRC_DIR = ./src
+BUILD_DIR = ./build
+BIN_DIR = ./bin
+DIR_GUARD = @mkdir -p $(@D)
 
-parser: main.o tseitin.o parser.o
-	$(CXX) $(CXXFLAGS) -o parser main.o tseitin.o parser.o
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+SRC_NAMES = $(notdir $(SRCS))
+OBJ_NAMES = $(SRC_NAMES:.cpp=.o)
+OBJS = $(addprefix $(BUILD_DIR)/,$(OBJ_NAMES))
+DEPS = $(OBJS:.o=.d)
 
-main.o: main.cpp formula.h parser.h cnf.h tseitin.h
-	$(CXX) $(CXXFLAGS) -c main.cpp
+.PHONY: clean
 
-tseitin.o: tseitin.cpp formula.h cnf.h parser.h tseitin.h
-	$(CXX) $(CXXFLAGS) -c tseitin.cpp
+all: $(BIN_DIR)/main
 
-parser.o: parser.cpp formula.h parser.h
-	$(CXX) $(CXXFLAGS) -c parser.cpp
+$(BIN_DIR)/main: $(OBJS)
+	$(DIR_GUARD)
+	$(CXX) $^ -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(DIR_GUARD)
+	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
+
+-include $(DEPS)
 
 
 clean:
-	rm *.o parser
+	$(RM) $(BUILD_DIR)/* $(BIN_DIR)/*

@@ -2,6 +2,7 @@
 #include <sstream>
 #include <set>
 
+#include "tseitin.h"
 #include "formula.h"
 #include "cnf.h"
 #include "parser.h"
