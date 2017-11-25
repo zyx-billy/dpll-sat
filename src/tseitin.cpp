@@ -228,20 +228,11 @@ CNF *tu_set_to_cnf(tu_set *tus) {
   return result;
 }
 
-void print_rmap() {
-  for (int i = 0; i < Rmap->size(); i++) {
-    std::cout << i << ": " << (*Rmap)[i] << std::endl;
-  }
-}
-
-CNF *tseitin_transform(parse_result *pr) {
-  // make sure there's no errors in f
-  if (pr->has_error()) return 0;
-
+CNF *tseitin_transform(Formula *f, vmap_t *vmap, rmap_t *rmap) {
   // initialize global data
-  int primitive_vars = pr->Rmap->size();
-  Vmap = pr->Vmap;
-  Rmap = pr->Rmap;
+  int primitive_vars = rmap->size();
+  Vmap = vmap;
+  Rmap = rmap;
 
   Lmap = new lmap_t();
   for (int i = 0; i < Rmap->size(); i++) {
@@ -250,16 +241,14 @@ CNF *tseitin_transform(parse_result *pr) {
 
   // main
   tu_set tus(&tseitin_unit_compare);
-  gen_tu(pr->f, &tus);
+  gen_tu(f, &tus);
 
-  for (auto it = tus.begin(); it != tus.end(); it++) {
-    std::cout << (*it).print() << std::endl;
-  }
+  // print the basic tseitin units
+  // for (auto it = tus.begin(); it != tus.end(); it++) {
+  //   std::cout << (*it).print() << std::endl;
+  // }
 
   CNF *result = tu_set_to_cnf(&tus);
 
-  print_rmap();
-
-  std::cout << *result << std::endl;
   return result;
 }

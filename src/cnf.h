@@ -1,6 +1,7 @@
 #ifndef CNF_H
 #define CNF_H
 
+#include <ostream>
 #include <vector>
 
 typedef int var;

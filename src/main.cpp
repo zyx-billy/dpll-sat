@@ -9,6 +9,9 @@ int main() {
   char input[INPUT_BUF_SIZE];
   std::cin.getline(input, INPUT_BUF_SIZE);
 
+  /***********
+   * PARSING *
+   ***********/
   parse_result *pr = parse_formula(input, input+INPUT_BUF_SIZE);
 
   if (!pr->has_error()) {
@@ -32,12 +35,23 @@ int main() {
     return 0;
   }
 
-  std::cout << "Parse result:" << std::endl << *(pr->f) << std::endl;
+  std::cout << std::endl <<"Parse result (disambiguated):" << std::endl << *(pr->f) << std::endl;
 
-  std::cout << "Parse tree:" << std::endl;
+  std::cout << std::endl << "Parse tree:" << std::endl;
   pr->f->print_tree("");
 
-  tseitin_transform(pr);
+  vmap_t *Vmap = pr->Vmap;
+  rmap_t *Rmap = pr->Rmap;
+
+  /*************************
+   * TSEITIN CNF TRANSFORM *
+   *************************/
+  CNF *cnf = tseitin_transform(pr->f, Vmap, Rmap);
+
+  std::cout << std::endl << "Internal variable mapping:" << std::endl;
+  print_rmap(Rmap);
+
+  std::cout << std::endl << "Final CNF:" << std::endl << *cnf << std::endl;
 
   return 0;
 }

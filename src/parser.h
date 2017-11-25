@@ -28,6 +28,8 @@ struct parse_result {
   }
 };
 
+void print_rmap(rmap_t *Rmap);
+
 parse_result *parse_formula(char *f, char *end);
 
 #endif /* PARSER_H */

@@ -160,8 +160,8 @@ parse_result *parse_formula(char *f, char *end) {
   return new parse_result(root, Vmap, Rmap);
 }
 
-void print_all_variables(rmap_t *Rmap) {
-  std::cout << "All variables:" << std::endl;
+/* helpers */
+void print_rmap(rmap_t *Rmap) {
   for (int i = 0; i < Rmap->size(); i++) {
     std::cout << i << ": " << (*Rmap)[i] << std::endl;
   }
