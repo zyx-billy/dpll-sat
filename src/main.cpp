@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "cnf.h"
 #include "tseitin.h"
+#include "dpll.h"
 
 #define INPUT_BUF_SIZE 256
 
@@ -42,6 +43,7 @@ int main() {
 
   vmap_t *Vmap = pr->Vmap;
   rmap_t *Rmap = pr->Rmap;
+  int num_primitive_vars = Rmap->size();
 
   /*************************
    * TSEITIN CNF TRANSFORM *
@@ -52,6 +54,19 @@ int main() {
   print_rmap(Rmap);
 
   std::cout << std::endl << "Final CNF:" << std::endl << *cnf << std::endl;
+
+  /************
+   * DPLL SAT *
+   ************/
+  assignment result;
+
+  std::cout << std::endl << "Running DPLL with " << Rmap->size()
+            << " variables and "<< cnf->clauses.size()
+            << " clauses..." << std::endl;
+  bool is_sat = dpll_sat(cnf, Rmap->size(), result);
+
+  std::cout << std::endl << "Satisfying assignment:" << std::endl;
+  print_assignment(result);
 
   return 0;
 }

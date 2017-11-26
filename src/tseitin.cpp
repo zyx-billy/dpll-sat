@@ -82,16 +82,6 @@ lpair find_or_assign_var(Formula *f) {
   return (*Lmap)[(*Vmap)[var_name]];
 }
 
-CNF *merge_cnf(CNF *CNF_A, CNF *CNF_B) {
-  std::vector<Clause *> *A = &(CNF_A->clauses);
-  std::vector<Clause *> *B = &(CNF_B->clauses);
-
-  A->reserve(A->size() + B->size());
-  A->insert(A->end(), B->begin(), B->end());
-  delete CNF_B;
-  return CNF_A;
-}
-
 // transform from C <-> (A & B) to CNF
 // heuristic:
 //   C <-> (A & B) = (!A | !B | C) & (A | !C) & (B | !C)
@@ -249,6 +239,12 @@ CNF *tseitin_transform(Formula *f, vmap_t *vmap, rmap_t *rmap) {
   // }
 
   CNF *result = tu_set_to_cnf(&tus);
+
+  // add the var representing the entire formula to result
+  lpair entire_formula = find_or_assign_var(f);
+  Clause *C = new Clause();
+  C->literals.push_back(entire_formula.pos);
+  result->clauses.push_back(C);
 
   return result;
 }

@@ -64,4 +64,6 @@ public:
   }
 };
 
+CNF *merge_cnf(CNF *CNF_A, CNF *CNF_B);
+
 #endif /* CNF_H */
