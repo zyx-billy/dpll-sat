@@ -65,8 +65,12 @@ int main() {
             << " clauses..." << std::endl;
   bool is_sat = dpll_sat(cnf, Rmap->size(), result);
 
-  std::cout << std::endl << "Satisfying assignment:" << std::endl;
-  print_assignment(result);
+  if (is_sat) {
+    std::cout << std::endl << "Satisfying assignment:" << std::endl;
+    print_assignment(result);
+  } else {
+    std::cout << std::endl << "NON-SAT" << std::endl;
+  }
 
   return 0;
 }

@@ -97,6 +97,75 @@ struct dpll_decision {
   }
 };
 
+class dpll_logger {
+  std::string prefix;
+
+  void indent() {
+    prefix += "  ";
+  }
+
+  void dedent() { 
+    if (prefix.length() < 2) return;
+    prefix.pop_back();
+    prefix.pop_back();
+  }
+
+  void write_prefix() {
+    std::cout << prefix;
+  }
+
+  void write_assignment(int var, bool asmt) {
+    std::cout << var << " <- ";
+    if (asmt) std::cout << "true ";
+    else std::cout << "false ";
+  }
+
+  void write_decision(dpll_decision &decision) {
+    write_assignment(decision.decision_var, decision.decision_asmt);
+  }
+
+  void write_clause(Clause *C) {
+    std::cout << *C << " ";
+  }
+
+public:
+  dpll_logger() : prefix("") {}
+
+  void log_decision(dpll_decision &decision) {
+    write_prefix();
+    std::cout << "Decide ";
+    write_decision(decision);
+    std::cout << std::endl;
+    indent();
+  }
+
+  void log_redecision(dpll_decision &decision) {
+    write_prefix();
+    std::cout << "Re-decide ";
+    write_decision(decision);
+    std::cout << std::endl;
+    indent();
+  }
+
+  void log_propagation(int var, bool var_asmt, Clause *C) {
+    write_prefix();
+    std::cout << "Propagate ";
+    write_assignment(var, var_asmt);
+    write_clause(C);
+    std::cout << std::endl;
+  }
+
+  void log_backtrack(Clause *C) {
+    write_prefix();
+    std::cout << "Backtrack ";
+    if (C) write_clause(C);
+    std::cout << std::endl;
+    dedent();
+  }
+};
+
+dpll_logger Logger;
+
 // determine the interpretation of a disjunctive clause
 cinterp interpret_clause(Clause *C, Interp *I, int *undef_var, bool *undef_sat_interp) {
   bool seen_undef = false;
@@ -117,12 +186,13 @@ cinterp interpret_clause(Clause *C, Interp *I, int *undef_var, bool *undef_sat_i
   return cunit;
 }
 
-vinterp interpret_cnf(CNF *cnf, Interp *I) {
+vinterp interpret_cnf(CNF *cnf, Interp *I, Clause **offending_clause) {
   bool seen_undef = false;
 
   for (auto C = cnf->clauses.begin(); C != cnf->clauses.end(); C++) {
     switch (interpret_clause(*C, I, nullptr, nullptr)) {
       case cfalse:
+        if (offending_clause) *offending_clause = *C;
         return vfalse;
       case cunit: // fall thru
       case cundef:
@@ -134,13 +204,13 @@ vinterp interpret_cnf(CNF *cnf, Interp *I) {
   return vtrue;
 }
 
-bool find_unit_clause(CNF *cnf, Interp *I, int *unit_var, bool *unit_interp) {
+Clause *find_unit_clause(CNF *cnf, Interp *I, int *unit_var, bool *unit_interp) {
   for (auto C = cnf->clauses.begin(); C != cnf->clauses.end(); C++) {
     if (interpret_clause(*C, I, unit_var, unit_interp) == cunit) {
-      return true;
+      return *C;
     }
   }
-  return false;
+  return nullptr;
 }
 
 // attempts to unit propagate until it cannot
@@ -150,15 +220,18 @@ bool unit_propagate_all(CNF *cnf, Interp *I, dpll_decision &dec) {
   int unit_var;
   bool unit_interp;
   bool has_conflict = false;
+  Clause *target_clause;
   
-  if (!find_unit_clause(cnf, I, &unit_var, &unit_interp)) {
+  target_clause = find_unit_clause(cnf, I, &unit_var, &unit_interp);
+  if (!target_clause) {
     // failed to find unit, implies no conflicts
     return true;
   }
 
-  std::cout << "Found Unit: " << unit_var << " - " << unit_interp << std::endl;
+  Logger.log_propagation(unit_var, unit_interp, target_clause);
   I->update(unit_var, unit_interp);
-  if (interpret_cnf(cnf, I) == vfalse) {
+  if (interpret_cnf(cnf, I, &target_clause) == vfalse) {
+    Logger.log_backtrack(target_clause);
     has_conflict = true;
   } else if (!unit_propagate_all(cnf, I, dec)) {
     has_conflict = true;
@@ -219,19 +292,22 @@ bool dpll_main(CNF *cnf, Interp *I) {
   decisions.emplace_back(-1, true);
 
   while (true) {
-    can_propagate = unit_propagate_all(cnf, I, decisions.back());
     I->quick_print();
+    can_propagate = unit_propagate_all(cnf, I, decisions.back());
 
     if (!can_propagate) {
       // has conflict
       bool backtrack_success = false;
+      // find the last decision that has not yet been flipped and flip it
       while (decisions.size() > 1) {
         dpll_decision last_decision = decisions.back();
         if (!last_decision.has_been_flipped) {
           last_decision.flip_decision();
           backtrack_success = true;
+          Logger.log_redecision(decisions.back());
           break;
         } else {
+          Logger.log_backtrack(nullptr);
           decisions.pop_back();
         }
       }
@@ -246,12 +322,11 @@ bool dpll_main(CNF *cnf, Interp *I) {
     
     can_decide = decide(cnf, I, &undef_var, &undef_sat_interp);
     if (!can_decide) break;
-    std::cout << "deciding " << undef_var << std::endl;
 
     // make the decision
     decisions.emplace_back(undef_var, undef_sat_interp);
     I->update(undef_var, undef_sat_interp);
-    I->quick_print();
+    Logger.log_decision(decisions.back());
   }
 
   return true;
