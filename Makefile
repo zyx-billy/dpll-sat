@@ -1,3 +1,5 @@
+EXE_NAME = sat
+
 CXX = g++
 CXXFLAGS = -std=c++11
 
@@ -14,9 +16,9 @@ DEPS = $(OBJS:.o=.d)
 
 .PHONY: clean
 
-all: $(BIN_DIR)/main
+all: $(BIN_DIR)/$(EXE_NAME)
 
-$(BIN_DIR)/main: $(OBJS)
+$(BIN_DIR)/$(EXE_NAME): $(OBJS)
 	$(DIR_GUARD)
 	$(CXX) $^ -o $@
 
