@@ -218,9 +218,64 @@ CNF *tu_set_to_cnf(tu_set *tus) {
   return result;
 }
 
-CNF *tseitin_transform(Formula *f, vmap_t *vmap, rmap_t *rmap) {
+// direct parse into CNF
+Literal *parse_into_literal(Formula *f, bool negate) {
+  if (f->type == Formula::variable) {
+      lpair Vp = find_or_assign_var(f);
+      if (negate) return Vp.neg;
+      return Vp.pos;
+  } else if (f->type == Formula::negated) {
+      Negated *nv = static_cast<Negated *>(f);
+      return parse_into_literal(nv->f, !negate);
+  }
+  return nullptr;
+}
+
+Clause *parse_into_clause(Formula *f) {
+  if (f->type == Formula::binary) {
+    Binary *b = static_cast<Binary *>(f);
+    if (b->op != lor) return nullptr;
+    Clause *left_res = parse_into_clause(b->l);
+    Clause *right_res = parse_into_clause(b->r);
+    if (!left_res || !right_res) return nullptr;
+    return merge_clause(left_res, right_res);
+  } else {
+    Literal *L = parse_into_literal(f, false);
+    if (!L) return nullptr;
+    Clause *C = new Clause();
+    C->literals.push_back(L);
+    return C;
+  }
+}
+
+// check if an arbitrary formula is in cnf already
+CNF *parse_into_cnf(Formula *f) {
+  if (f->type == Formula::binary) {
+    Binary *b = static_cast<Binary *>(f);
+    if (b->op == land) {
+      // could be cnf
+      CNF *left_result = parse_into_cnf(b->l);
+      CNF *right_result = parse_into_cnf(b->r);
+      if (!left_result || !right_result) return nullptr;
+      return merge_cnf(left_result, right_result);
+    } else if (b->op = lor) {
+      // do nothing here so it falls out of 'if' case
+      // try parsing into clause
+    } else {
+      return nullptr;
+    }
+  }
+
+  Clause *C = parse_into_clause(f);
+  if (!C) return nullptr;
+  CNF *result = new CNF();
+  result->clauses.push_back(C);
+  return result;
+}
+
+// must call this first before tseitin_transform or parse_into_cnf
+void tseitin_init(vmap_t *vmap, rmap_t *rmap) {
   // initialize global data
-  int primitive_vars = rmap->size();
   Vmap = vmap;
   Rmap = rmap;
 
@@ -228,8 +283,12 @@ CNF *tseitin_transform(Formula *f, vmap_t *vmap, rmap_t *rmap) {
   for (int i = 0; i < Rmap->size(); i++) {
     Lmap->emplace_back(new Literal(i, true), new Literal(i, false));
   }
+}
 
-  // main
+CNF *tseitin_transform(Formula *f) {
+  CNF *result;
+
+  // do full tseitin
   tu_set tus(&tseitin_unit_compare);
   gen_tu(f, &tus);
 
@@ -238,7 +297,7 @@ CNF *tseitin_transform(Formula *f, vmap_t *vmap, rmap_t *rmap) {
   //   std::cout << (*it).print() << std::endl;
   // }
 
-  CNF *result = tu_set_to_cnf(&tus);
+  result = tu_set_to_cnf(&tus);
 
   // add the var representing the entire formula to result
   lpair entire_formula = find_or_assign_var(f);

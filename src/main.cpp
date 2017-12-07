@@ -48,7 +48,18 @@ int main() {
   /*************************
    * TSEITIN CNF TRANSFORM *
    *************************/
-  CNF *cnf = tseitin_transform(pr->f, Vmap, Rmap);
+  tseitin_init(Vmap, Rmap);
+
+  CNF *cnf;
+  // attempt direct transform
+  cnf = parse_into_cnf(pr->f);
+  if (cnf) {
+    std::cout << std::endl << "Recognized input as CNF. No tseitin tranform needed" << std::endl;
+  } else {
+    std::cout << std::endl << "Did not recognize input as CNF. Performing tseitin transform" << std::endl;
+    // if cannot direct transform, perform full tseitin
+    cnf = tseitin_transform(pr->f);
+  }
 
   std::cout << std::endl << "Internal variable mapping:" << std::endl;
   print_rmap(Rmap);
