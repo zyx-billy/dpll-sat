@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "dpll.h"
+#include "parser.h"
 
 // variable interpretation
 enum vinterp {vtrue, vfalse, vundef};
@@ -292,7 +293,7 @@ bool dpll_main(CNF *cnf, Interp *I) {
   decisions.emplace_back(-1, true);
 
   while (true) {
-    I->quick_print();
+    // I->quick_print();
     can_propagate = unit_propagate_all(cnf, I, decisions.back());
 
     if (!can_propagate) {
@@ -345,8 +346,8 @@ bool dpll_sat(CNF *cnf, int num_vars, assignment &result) {
   return is_sat;
 }
 
-void print_assignment(assignment &asmt) {
-  for (int i = 0; i < asmt.size(); i++) {
-    std::cout << i << ": " << asmt[i] << std::endl;
+void print_assignment(assignment &asmt, rmap_t* Rmap, int num_vars) {
+  for (int i = 0; i < num_vars; i++) {
+    std::cout << (*Rmap)[i] << ": " << asmt[i] << std::endl;
   }
 }

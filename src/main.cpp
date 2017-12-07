@@ -78,7 +78,7 @@ int main() {
 
   if (is_sat) {
     std::cout << std::endl << "Satisfying assignment:" << std::endl;
-    print_assignment(result);
+    print_assignment(result, Rmap, num_primitive_vars);
   } else {
     std::cout << std::endl << "NON-SAT" << std::endl;
   }
