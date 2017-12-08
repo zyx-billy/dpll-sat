@@ -258,7 +258,7 @@ CNF *parse_into_cnf(Formula *f) {
       CNF *right_result = parse_into_cnf(b->r);
       if (!left_result || !right_result) return nullptr;
       return merge_cnf(left_result, right_result);
-    } else if (b->op = lor) {
+    } else if (b->op == lor) {
       // do nothing here so it falls out of 'if' case
       // try parsing into clause
     } else {
