@@ -304,14 +304,16 @@ bool dpll_main(CNF *cnf, Interp *I) {
       bool backtrack_success = false;
       // find the last decision that has not yet been flipped and flip it
       while (decisions.size() > 1) {
-        dpll_decision last_decision = decisions.back();
+        dpll_decision &last_decision = decisions.back();
         if (!last_decision.has_been_flipped) {
           last_decision.flip_decision();
           backtrack_success = true;
+          I->update(last_decision.decision_var, last_decision.decision_asmt);
           Logger->log_redecision(decisions.back());
           break;
         } else {
           Logger->log_backtrack(nullptr);
+          I->update(last_decision.decision_var, vundef);
           decisions.pop_back();
         }
       }
@@ -328,6 +330,7 @@ bool dpll_main(CNF *cnf, Interp *I) {
     if (!can_decide) break;
 
     // make the decision
+    undef_sat_interp = true;
     decisions.emplace_back(undef_var, undef_sat_interp);
     I->update(undef_var, undef_sat_interp);
     Logger->log_decision(decisions.back());
