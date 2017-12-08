@@ -330,7 +330,7 @@ bool dpll_main(CNF *cnf, Interp *I) {
     if (!can_decide) break;
 
     // make the decision
-    undef_sat_interp = true;
+    // undef_sat_interp = true; // uncomment this line to always decide true first
     decisions.emplace_back(undef_var, undef_sat_interp);
     I->update(undef_var, undef_sat_interp);
     Logger->log_decision(decisions.back());
