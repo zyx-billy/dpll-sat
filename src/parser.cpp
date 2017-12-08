@@ -161,8 +161,8 @@ parse_result *parse_formula(char *f, char *end) {
 }
 
 /* helpers */
-void print_rmap(rmap_t *Rmap) {
+void print_rmap(rmap_t *Rmap, std::ostream &output) {
   for (int i = 0; i < Rmap->size(); i++) {
-    std::cout << i << ": " << (*Rmap)[i] << std::endl;
+    output << i << ": " << (*Rmap)[i] << std::endl;
   }
 }

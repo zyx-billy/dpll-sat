@@ -8,6 +8,6 @@ typedef std::vector<bool> assignment;
 
 void print_assignment(assignment &asmt, rmap_t* Rmap, int num_vars);
 
-bool dpll_sat(CNF *cnf, int num_vars, assignment &result);
+bool dpll_sat(CNF *cnf, int num_vars, assignment &result, std::ostream &output_pref);
 
 #endif /* DPLL_H */

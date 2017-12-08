@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <ostream>
 #include <unordered_map>
 #include <vector>
 #include "formula.h"
@@ -28,7 +29,7 @@ struct parse_result {
   }
 };
 
-void print_rmap(rmap_t *Rmap);
+void print_rmap(rmap_t *Rmap, std::ostream &output);
 
 parse_result *parse_formula(char *f, char *end);
 

@@ -5,6 +5,8 @@
 #include "dpll.h"
 #include "parser.h"
 
+std::ostream *output;
+
 // variable interpretation
 enum vinterp {vtrue, vfalse, vundef};
 
@@ -99,6 +101,7 @@ struct dpll_decision {
 };
 
 class dpll_logger {
+  std::ostream &output;
   std::string prefix;
 
   void indent() {
@@ -112,13 +115,13 @@ class dpll_logger {
   }
 
   void write_prefix() {
-    std::cout << prefix;
+    output << prefix;
   }
 
   void write_assignment(int var, bool asmt) {
-    std::cout << var << " <- ";
-    if (asmt) std::cout << "true ";
-    else std::cout << "false ";
+    output << var << " <- ";
+    if (asmt) output << "true ";
+    else output << "false ";
   }
 
   void write_decision(dpll_decision &decision) {
@@ -126,46 +129,46 @@ class dpll_logger {
   }
 
   void write_clause(Clause *C) {
-    std::cout << *C << " ";
+    output << *C << " ";
   }
 
 public:
-  dpll_logger() : prefix("") {}
+  dpll_logger(std::ostream &o) : prefix(""), output(o) {}
 
   void log_decision(dpll_decision &decision) {
     write_prefix();
-    std::cout << "Decide ";
+    output << "Decide ";
     write_decision(decision);
-    std::cout << std::endl;
+    output << std::endl;
     indent();
   }
 
   void log_redecision(dpll_decision &decision) {
     write_prefix();
-    std::cout << "Re-decide ";
+    output << "Re-decide ";
     write_decision(decision);
-    std::cout << std::endl;
+    output << std::endl;
     indent();
   }
 
   void log_propagation(int var, bool var_asmt, Clause *C) {
     write_prefix();
-    std::cout << "Propagate ";
+    output << "Propagate ";
     write_assignment(var, var_asmt);
     write_clause(C);
-    std::cout << std::endl;
+    output << std::endl;
   }
 
   void log_backtrack(Clause *C) {
     write_prefix();
-    std::cout << "Backtrack ";
+    output << "Backtrack ";
     if (C) write_clause(C);
-    std::cout << std::endl;
+    output << std::endl;
     dedent();
   }
 };
 
-dpll_logger Logger;
+dpll_logger *Logger;
 
 // determine the interpretation of a disjunctive clause
 cinterp interpret_clause(Clause *C, Interp *I, int *undef_var, bool *undef_sat_interp) {
@@ -229,10 +232,10 @@ bool unit_propagate_all(CNF *cnf, Interp *I, dpll_decision &dec) {
     return true;
   }
 
-  Logger.log_propagation(unit_var, unit_interp, target_clause);
+  Logger->log_propagation(unit_var, unit_interp, target_clause);
   I->update(unit_var, unit_interp);
   if (interpret_cnf(cnf, I, &target_clause) == vfalse) {
-    Logger.log_backtrack(target_clause);
+    Logger->log_backtrack(target_clause);
     has_conflict = true;
   } else if (!unit_propagate_all(cnf, I, dec)) {
     has_conflict = true;
@@ -305,10 +308,10 @@ bool dpll_main(CNF *cnf, Interp *I) {
         if (!last_decision.has_been_flipped) {
           last_decision.flip_decision();
           backtrack_success = true;
-          Logger.log_redecision(decisions.back());
+          Logger->log_redecision(decisions.back());
           break;
         } else {
-          Logger.log_backtrack(nullptr);
+          Logger->log_backtrack(nullptr);
           decisions.pop_back();
         }
       }
@@ -327,13 +330,16 @@ bool dpll_main(CNF *cnf, Interp *I) {
     // make the decision
     decisions.emplace_back(undef_var, undef_sat_interp);
     I->update(undef_var, undef_sat_interp);
-    Logger.log_decision(decisions.back());
+    Logger->log_decision(decisions.back());
   }
 
   return true;
 }
 
-bool dpll_sat(CNF *cnf, int num_vars, assignment &result) {
+bool dpll_sat(CNF *cnf, int num_vars, assignment &result, std::ostream &output_pref) {
+  output = &output_pref;
+  Logger = new dpll_logger(*output);
+
   Interp *I = new Interp(num_vars);
 
   bool is_sat = dpll_main(cnf, I);
@@ -343,6 +349,7 @@ bool dpll_sat(CNF *cnf, int num_vars, assignment &result) {
   }
   
   delete I;
+  delete Logger;
   return is_sat;
 }
 
