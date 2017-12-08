@@ -18,11 +18,13 @@ Input is given as a string via stdin. Only one formula at a time is allowed.
 
 This SAT solver accepts arbitrary logical formula input. The supported logical operations are:
 
-  and     &
-  or      |
-  not     !
-  imply   ->
-  equiv  <->
+|operator|symbol|
+| ---  | --- |
+| and  |  &  |
+| or   |  \| |
+| not  |  !  |
+| imply|  -> |
+| equiv| <-> |
 
 Logical not has the highest operator precedence. All others have the same level of precedence. As by convention, parens can be used to override operator precedence.
 
@@ -35,10 +37,13 @@ The final output, however, will display the satisfying assignment using the orig
 ## Options
   -t  Display parse tree (hidden by default).
       Parse tree is drawn sideways (increasing depth to the right).
+
   -q  Quieter output. Displays only the final results of each step.
+  
   -qq Quietest output. Displays only the final sat/non-sat result.
 
 # Project Structure
+```
 ./
   bin/   - output executable
   build/ - build temp output
@@ -46,6 +51,6 @@ The final output, however, will display the satisfying assignment using the orig
   test/  - examples of test cases
   tools/ - misc tools
     verifier.py - auto verifier script
-
+```
 # Author
 Billy Zhu (yuxiangz)
