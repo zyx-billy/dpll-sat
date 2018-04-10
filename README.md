@@ -1,4 +1,4 @@
-# DPLL_SAT
+# DPLL-SAT
 A dpll-based satisfiability solver focused on traceability.
 
 The solver consists of three parts:
@@ -6,14 +6,14 @@ The solver consists of three parts:
 2) Tseitin transformer to convert formula into CNF
 3) DPLL-based SAT solver
 
-# Build Instructions
+## Build Instructions
 This project uses standard C++ with no external libraries.
 To build on a standard linux machine, run `make`.
 
 The build result will be an executable: bin/sat
 
-# Usage Instructions
-## Inputs
+## Usage Instructions
+### Inputs
 Input is given as a string via stdin. Only one formula at a time is allowed.
 
 This SAT solver accepts arbitrary logical formula input. The supported logical operations are:
@@ -34,7 +34,7 @@ Note - variable renaming:
 To minimize the size of intermediate output, variables will be renamed using 0-indexed integers. This is especially helpful when performing Tseitin transform, as we will be creating new variables in the process.
 The final output, however, will display the satisfying assignment using the original variable names. Only the intermediate steps will use replaced variables. A table mapping original variable names to internal variable names can be displayed.
 
-## Options
+### Options
   -t  Display parse tree (hidden by default).
       Parse tree is drawn sideways (increasing depth to the right).
 
@@ -42,7 +42,7 @@ The final output, however, will display the satisfying assignment using the orig
   
   -qq Quietest output. Displays only the final sat/non-sat result.
 
-# Project Structure
+## Project Structure
 ```
 ./
   bin/   - output executable
@@ -52,5 +52,3 @@ The final output, however, will display the satisfying assignment using the orig
   tools/ - misc tools
     verifier.py - auto verifier script
 ```
-# Author
-Billy Zhu (yuxiangz)
